@@ -100,6 +100,7 @@ func (s *SyncEngine) SyncChannel(ctx context.Context, channel models.Channel) er
 			}
 		}
 	}
+	log.Printf("[sync] channel %s: sync_files=%v, metadata=%s", channel.Name, syncFiles, channel.Metadata)
 
 	totalMessages := 0
 	for _, conv := range conversations {

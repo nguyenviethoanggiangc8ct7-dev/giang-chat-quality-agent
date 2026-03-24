@@ -683,15 +683,20 @@ async function loadAuthImage(url: string) {
 
 // Load auth images when messages change
 watch(() => conversationStore.messages, () => {
-  for (const msg of conversationStore.messages) {
+  const msgs = conversationStore.messages
+  if (!msgs || !Array.isArray(msgs)) return
+  for (const msg of msgs) {
     if (msg.attachments) {
-      const atts = typeof msg.attachments === 'string' ? JSON.parse(msg.attachments) : msg.attachments
-      for (const att of atts) {
-        if (isImageAttachment(att)) {
-          const url = getAttachmentUrl(att)
-          if (url) loadAuthImage(url)
+      try {
+        const atts = typeof msg.attachments === 'string' ? JSON.parse(msg.attachments) : msg.attachments
+        if (!Array.isArray(atts)) continue
+        for (const att of atts) {
+          if (isImageAttachment(att)) {
+            const url = getAttachmentUrl(att)
+            if (url) loadAuthImage(url)
+          }
         }
-      }
+      } catch { continue }
     }
   }
 }, { immediate: true })
