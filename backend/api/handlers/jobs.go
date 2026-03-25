@@ -114,7 +114,7 @@ var allowedJobUpdateFields = map[string]bool{
 	"input_channel_ids": true, "outputs": true, "rules_config": true,
 	"rules_content": true, "skip_conditions": true,
 	"ai_provider": true, "ai_model": true, "ai_system_prompt": true,
-	"schedule_cron": true, "schedule_enabled": true,
+	"schedule_type": true, "schedule_cron": true, "schedule_enabled": true,
 	"date_from": true, "date_to": true, "max_conversations": true,
 }
 
