@@ -8,6 +8,8 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
+var claudeHTTPClient = NewHTTPClientWithTimeout()
+
 type ClaudeProvider struct {
 	apiKey    string
 	model     string
@@ -29,41 +31,46 @@ func NewClaudeProvider(apiKey, model string, maxTokens int) *ClaudeProvider {
 }
 
 func (c *ClaudeProvider) AnalyzeChat(ctx context.Context, systemPrompt string, chatTranscript string) (AIResponse, error) {
-	client := anthropic.NewClient(option.WithAPIKey(c.apiKey))
+	return withRetry(ctx, "claude", func() (AIResponse, error) {
+		client := anthropic.NewClient(
+			option.WithAPIKey(c.apiKey),
+			option.WithHTTPClient(claudeHTTPClient),
+		)
 
-	message, err := client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.Model(c.model),
-		MaxTokens: int64(c.maxTokens),
-		System: []anthropic.TextBlockParam{
-			{Text: systemPrompt},
-		},
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock(chatTranscript)),
-		},
-	})
-	if err != nil {
-		return AIResponse{}, fmt.Errorf("claude api error: %w", err)
-	}
-
-	// Extract text from response content blocks
-	var text string
-	for _, block := range message.Content {
-		if block.Type == "text" {
-			text = block.Text
-			break
+		message, err := client.Messages.New(ctx, anthropic.MessageNewParams{
+			Model:     anthropic.Model(c.model),
+			MaxTokens: int64(c.maxTokens),
+			System: []anthropic.TextBlockParam{
+				{Text: systemPrompt},
+			},
+			Messages: []anthropic.MessageParam{
+				anthropic.NewUserMessage(anthropic.NewTextBlock(chatTranscript)),
+			},
+		})
+		if err != nil {
+			return AIResponse{}, fmt.Errorf("claude api error: %w", err)
 		}
-	}
-	if text == "" {
-		return AIResponse{}, fmt.Errorf("claude api returned empty content")
-	}
 
-	return AIResponse{
-		Content:      text,
-		InputTokens:  int(message.Usage.InputTokens),
-		OutputTokens: int(message.Usage.OutputTokens),
-		Model:        string(message.Model),
-		Provider:     "claude",
-	}, nil
+		// Extract text from response content blocks
+		var text string
+		for _, block := range message.Content {
+			if block.Type == "text" {
+				text = block.Text
+				break
+			}
+		}
+		if text == "" {
+			return AIResponse{}, fmt.Errorf("claude api returned empty content")
+		}
+
+		return AIResponse{
+			Content:      text,
+			InputTokens:  int(message.Usage.InputTokens),
+			OutputTokens: int(message.Usage.OutputTokens),
+			Model:        string(message.Model),
+			Provider:     "claude",
+		}, nil
+	})
 }
 
 func (c *ClaudeProvider) AnalyzeChatBatch(ctx context.Context, systemPrompt string, items []BatchItem) (AIResponse, error) {
