@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -145,6 +146,16 @@ func (s *Scheduler) syncAllChannelsTask() {
 	}
 }
 
+// tenantTimezone returns the timezone configured for a tenant, defaulting to Asia/Ho_Chi_Minh.
+func tenantTimezone(tenantID string) string {
+	var setting models.AppSetting
+	db.DB.Where("tenant_id = ? AND setting_key = 'timezone'", tenantID).First(&setting)
+	if setting.ValuePlain != "" {
+		return setting.ValuePlain
+	}
+	return "Asia/Ho_Chi_Minh"
+}
+
 // loadCronJobs loads active jobs with cron schedules and registers them.
 func (s *Scheduler) loadCronJobs() {
 	var jobs []models.Job
@@ -152,8 +163,10 @@ func (s *Scheduler) loadCronJobs() {
 
 	for _, job := range jobs {
 		j := job // capture
+		tz := tenantTimezone(j.TenantID)
+		cronExpr := fmt.Sprintf("TZ=%s %s", tz, j.ScheduleCron)
 		_, err := s.scheduler.NewJob(
-			gocron.CronJob(j.ScheduleCron, false),
+			gocron.CronJob(cronExpr, false),
 			gocron.NewTask(func() {
 				log.Printf("[scheduler] running analysis job %s (%s)", j.Name, j.ID)
 				analyzer := NewAnalyzer(s.cfg)
