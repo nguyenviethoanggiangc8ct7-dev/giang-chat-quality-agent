@@ -24,7 +24,9 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
-
+    networks:
+      - dokploy-network1
+      - default
   db:
     image: mysql:8.0
     container_name: cqa-db
@@ -51,3 +53,6 @@ volumes:
   file_storage:
   lego_certs:
   lego_webroot:
+networks:
+  dokploy-network1:
+    external: true
