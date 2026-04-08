@@ -24,9 +24,7 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
-    networks:
-      - dokploy-network1
-      - default
+
   db:
     image: mysql:8.0
     container_name: cqa-db
@@ -38,9 +36,6 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-    networks:
-      - dokploy-network1
-      - default
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -56,6 +51,3 @@ volumes:
   file_storage:
   lego_certs:
   lego_webroot:
-networks:
-  dokploy-network1:
-    external: true
