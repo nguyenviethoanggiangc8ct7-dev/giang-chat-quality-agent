@@ -6,7 +6,7 @@ services:
     build: .
     container_name: cqa-app
     restart: unless-stopped
-    expose:
+    ports:
       - "8111:8080"
     env_file:
       - .env
